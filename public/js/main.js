@@ -71,16 +71,20 @@ const appState = {
             }
 
             let url = null;
+            let contentType = null;
             if (contentToShow) {
-                if (contentToShow.type === 'image') {
+                if (contentToShow.type === 'image' || contentToShow.type === 'video') {
                     url = contentToShow.data.url;
+                    contentType = contentToShow.type;
                 } else if (contentToShow.type === 'playlist') {
                     const playlist = this.allPlaylists.find(p => p.id === contentToShow.data.id);
-                    url = playlist?.items?.[0]?.media?.url || 'https://via.placeholder.com/400x200/1E1E1E/9CA3AF?text=Playlist';
+                    const firstMedia = playlist?.items?.[0]?.media;
+                    url = firstMedia?.url || 'https://via.placeholder.com/400x200/1E1E1E/9CA3AF?text=Playlist';
+                    contentType = firstMedia?.mimeType?.startsWith('video/') ? 'video' : 'image';
                 }
             }
-            
-            return { ...screen, currentImageURL: url };
+
+            return { ...screen, currentMediaURL: url, currentContentType: contentType };
         });
     },
 
@@ -116,17 +120,26 @@ const appState = {
             const isToday = new Date().toDateString() === this.selectedDate.toDateString();
             viewport.scrollTop = isToday ? (new Date().getHours()) * hourHeight : 7.5 * hourHeight;
         }
-        this.handleImageLoading();
+        this.handleMediaLoading();
     },
 
-    handleImageLoading() {
-        const images = document.querySelectorAll('.lazy-image');
-        images.forEach(img => {
-            if (img.complete && img.naturalHeight > 0) {
-                img.classList.add('is-loaded');
+    handleMediaLoading() {
+        const elements = document.querySelectorAll('.lazy-media');
+        elements.forEach(el => {
+            if (el.tagName === 'VIDEO') {
+                if (el.readyState >= 2) {
+                    el.classList.add('is-loaded');
+                } else {
+                    el.addEventListener('loadeddata', () => el.classList.add('is-loaded'), { once: true });
+                    el.addEventListener('error', () => console.warn("Media failed to load:", el.src), { once: true });
+                }
             } else {
-                img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
-                img.addEventListener('error', () => console.warn("Image failed to load:", img.src), { once: true });
+                if (el.complete && el.naturalHeight > 0) {
+                    el.classList.add('is-loaded');
+                } else {
+                    el.addEventListener('load', () => el.classList.add('is-loaded'), { once: true });
+                    el.addEventListener('error', () => console.warn("Media failed to load:", el.src), { once: true });
+                }
             }
         });
     }
@@ -144,7 +157,7 @@ function initApp(user) {
     const reRenderDashboard = () => {
         if (document.querySelector('#page-dashboard.active')) {
             UI.renderDashboard(appState.calculateCurrentScreenStates(), appState.allMedia, appState.allSchedules);
-            appState.handleImageLoading();
+            appState.handleMediaLoading();
         }
     };
     
@@ -204,7 +217,7 @@ function initApp(user) {
         appState.allMedia = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (document.querySelector('#page-media.active')) {
             UI.renderMedia(appState.allMedia, appState.userSettings.globalDefaultContent);
-            appState.handleImageLoading();
+            appState.handleMediaLoading();
         }
         reRenderDashboard(); 
     });

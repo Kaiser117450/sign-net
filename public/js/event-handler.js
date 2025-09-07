@@ -41,7 +41,7 @@ export function initializeEventListeners(appState) {
             } else if (activePage === 'dashboard') {
                 UI.renderDashboard(appState.calculateCurrentScreenStates(), appState.allMedia, appState.allSchedules);
                 UI.showToast("Dashboard view refreshed!");
-                appState.handleImageLoading();
+                appState.handleMediaLoading();
             }
         }
     });
@@ -252,9 +252,9 @@ export function initializeEventListeners(appState) {
         if (id && confirm('Delete this schedule item?')) { if(await SchedulerManager.deleteScheduleItem(appState.db, id)) UI.hideModals(); }
     });
 
-    document.getElementById('add-slide-btn').addEventListener('click', () => { UI.populateImageSelector(appState.allMedia); UI.showModal('modal-select-image'); });
-    document.getElementById('add-selected-images-btn').addEventListener('click', () => {
-        document.querySelectorAll('#playlist-image-selector-grid .selected').forEach(imgEl => { UI.addSlideToPlaylistEditor(JSON.parse(imgEl.dataset.media)); });
+    document.getElementById('add-slide-btn').addEventListener('click', () => { UI.populateMediaSelector(appState.allMedia); UI.showModal('modal-select-media'); });
+    document.getElementById('add-selected-media-btn').addEventListener('click', () => {
+        document.querySelectorAll('#playlist-media-selector-grid .selected').forEach(mediaEl => { UI.addSlideToPlaylistEditor(JSON.parse(mediaEl.dataset.media)); });
         UI.hideModals(); UI.showModal('modal-playlist-editor');
     });
 
@@ -269,7 +269,7 @@ export function initializeEventListeners(appState) {
                 duration: parseInt(slideEl.dataset.duration, 10) || 10
             });
         });
-        if (items.length === 0) { UI.showToast("A playlist must have at least one image.", "error"); return; }
+        if (items.length === 0) { UI.showToast("A playlist must have at least one media item.", "error"); return; }
         const playlistData = { name, items };
         const success = editingId 
             ? await PlaylistManager.updatePlaylist(appState.db, editingId, playlistData)

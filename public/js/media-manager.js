@@ -89,7 +89,8 @@ function uploadSingleFile(storage, db, userId, file) {
                         url: downloadURL,
                         storagePath: storagePath,
                         uploadedAt: serverTimestamp(),
-                        adminUid: userId
+                        adminUid: userId,
+                        mimeType: file.type
                     });
                     resolve();
                 } catch (error) {
@@ -107,9 +108,9 @@ export function handleFileUpload(storage, db, userId, files) {
         return;
     }
     
-    const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    const validFiles = Array.from(files).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
     if (validFiles.length === 0) {
-        showToast('No valid image files selected.', 'error');
+        showToast('No valid media files selected.', 'error');
         return;
     }
     

@@ -54,16 +54,30 @@ export function createMediaItemElement(item, globalDefaultContent) {
     mediaDiv.className = 'media-item skeleton-container';
     mediaDiv.dataset.id = item.id;
     mediaDiv.dataset.storagePath = item.storagePath;
-    const contentData = { type: 'image', data: { name: item.name, url: item.url, storagePath: item.storagePath } };
-    
+
+    const contentType = item.mimeType && item.mimeType.startsWith('video/') ? 'video' : 'image';
+    const contentData = {
+        type: contentType,
+        data: { name: item.name, url: item.url, storagePath: item.storagePath, mimeType: item.mimeType }
+    };
+
     mediaDiv.dataset.content = JSON.stringify(contentData);
-    
     mediaDiv.dataset.media = JSON.stringify(contentData.data);
-    const img = document.createElement('img');
-    img.className = 'lazy-image';
-    img.src = item.url;
-    img.alt = item.name;
-    mediaDiv.appendChild(img);
+
+    let mediaEl;
+    if (contentType === 'video') {
+        mediaEl = document.createElement('video');
+        mediaEl.src = item.url;
+        mediaEl.muted = true;
+        mediaEl.loop = true;
+        mediaEl.autoplay = true;
+        mediaEl.playsInline = true;
+    } else {
+        mediaEl = document.createElement('img');
+        mediaEl.alt = item.name;
+    }
+    mediaEl.className = 'lazy-media';
+    mediaDiv.appendChild(mediaEl);
     const overlay = document.createElement('div');
     overlay.className = 'media-overlay';
     const filename = document.createElement('p');
@@ -85,7 +99,7 @@ export function createMediaItemElement(item, globalDefaultContent) {
     actionsBar.appendChild(saveBtn);
     actionsBar.appendChild(deleteBtn);
     mediaDiv.appendChild(actionsBar);
-    const isGlobalDefault = globalDefaultContent && globalDefaultContent.type === 'image' && globalDefaultContent.data.url === item.url;
+    const isGlobalDefault = globalDefaultContent && globalDefaultContent.type === contentType && globalDefaultContent.data.url === item.url;
     const fallbackIndicator = document.createElement('i');
     fallbackIndicator.className = `fas fa-star global-fallback-indicator ${isGlobalDefault ? 'active' : ''}`;
     fallbackIndicator.title = "Set as Global Fallback";
@@ -98,7 +112,7 @@ export function renderMedia(media, globalDefaultContent) {
     if (!mediaGrid) return;
     mediaGrid.innerHTML = '';
     if (media.length === 0) {
-        mediaGrid.innerHTML = `<p class="empty-state-text" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 0;">No images uploaded yet.</p>`;
+        mediaGrid.innerHTML = `<p class=\"empty-state-text\" style=\"grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 0;\">No media uploaded yet.</p>`;
     } else {
         media.forEach(item => {
             const element = createMediaItemElement(item, globalDefaultContent);
@@ -158,15 +172,25 @@ export function renderDashboard(screensWithState, media, schedules) {
     screensWithState.forEach(screen => {
         const previewDiv = document.createElement('div');
         previewDiv.className = 'screen-preview';
-        const imageUrl = screen.currentImageURL || 'https://via.placeholder.com/400x200/1E1E1E/9CA3AF?text=Offline+or+Idle';
-        const imageContainer = document.createElement('div');
-        imageContainer.className = 'image-container skeleton-container';
-        const img = document.createElement('img');
-        img.className = 'lazy-image';
-        img.src = imageUrl;
-        img.alt = `${screen.name} content`;
-        imageContainer.appendChild(img);
-        previewDiv.appendChild(imageContainer);
+        const mediaUrl = screen.currentMediaURL || 'https://via.placeholder.com/400x200/1E1E1E/9CA3AF?text=Offline+or+Idle';
+        const isVideo = screen.currentContentType === 'video';
+        const mediaContainer = document.createElement('div');
+        mediaContainer.className = 'image-container skeleton-container';
+        let mediaEl;
+        if (isVideo) {
+            mediaEl = document.createElement('video');
+            mediaEl.src = mediaUrl;
+            mediaEl.muted = true;
+            mediaEl.loop = true;
+            mediaEl.autoplay = true;
+            mediaEl.playsInline = true;
+        } else {
+            mediaEl = document.createElement('img');
+            mediaEl.alt = `${screen.name} content`;
+        }
+        mediaEl.className = 'lazy-media';
+        mediaContainer.appendChild(mediaEl);
+        previewDiv.appendChild(mediaContainer);
         const screenInfoDiv = document.createElement('div');
         screenInfoDiv.className = 'screen-info';
         const nameSpan = document.createElement('span');
@@ -207,22 +231,27 @@ function createTabbedMediaPicker(containerId, media, playlists, selectedContent 
     if (!pickerContainer) return;
     pickerContainer.innerHTML = `
         <div class="modal-tabs">
-            <button class="modal-tab active" data-tab="images">Images</button>
+            <button class="modal-tab active" data-tab="media">Media</button>
             <button class="modal-tab" data-tab="playlists">Playlists</button>
         </div>
-        <div id="${containerId}-tab-images" class="tab-content active image-picker-grid"></div>
+        <div id="${containerId}-tab-media" class="tab-content active image-picker-grid"></div>
         <div id="${containerId}-tab-playlists" class="tab-content playlist-picker-list"></div>
     `;
-    const imageTab = pickerContainer.querySelector(`#${containerId}-tab-images`);
+    const mediaTab = pickerContainer.querySelector(`#${containerId}-tab-media`);
     const playlistTab = pickerContainer.querySelector(`#${containerId}-tab-playlists`);
     media.forEach(item => {
-        const imgItem = document.createElement('div');
-        imgItem.className = 'image-picker-item';
-        const contentData = { type: 'image', data: { name: item.name, url: item.url, storagePath: item.storagePath } };
-        imgItem.dataset.content = JSON.stringify(contentData);
-        imgItem.innerHTML = `<img src="${item.url}" title="${item.name}">`;
-        imgItem.onclick = () => { pickerContainer.querySelector('.selected')?.classList.remove('selected'); imgItem.classList.add('selected'); };
-        imageTab.appendChild(imgItem);
+        const mediaItem = document.createElement('div');
+        mediaItem.className = 'image-picker-item';
+        const contentType = item.mimeType && item.mimeType.startsWith('video/') ? 'video' : 'image';
+        const contentData = { type: contentType, data: { name: item.name, url: item.url, storagePath: item.storagePath, mimeType: item.mimeType } };
+        mediaItem.dataset.content = JSON.stringify(contentData);
+        if (contentType === 'video') {
+            mediaItem.innerHTML = `<video src="${item.url}" muted autoplay loop></video>`;
+        } else {
+            mediaItem.innerHTML = `<img src="${item.url}" title="${item.name}">`;
+        }
+        mediaItem.onclick = () => { pickerContainer.querySelector('.selected')?.classList.remove('selected'); mediaItem.classList.add('selected'); };
+        mediaTab.appendChild(mediaItem);
     });
     playlists.forEach(playlist => {
         const playlistItem = document.createElement('div');
@@ -246,8 +275,8 @@ function createTabbedMediaPicker(containerId, media, playlists, selectedContent 
             pickerContainer.querySelector('.modal-tab[data-tab="playlists"]')?.click();
             const el = playlistTab.querySelector(`[data-content*='"id":"${selectedContent.data.id}"']`);
             el?.classList.add('selected');
-        } else if (selectedContent.type === 'image') {
-            const el = imageTab.querySelector(`[data-content*='"url":"${selectedContent.data.url}"']`);
+        } else if (selectedContent.type === 'image' || selectedContent.type === 'video') {
+            const el = mediaTab.querySelector(`[data-content*='"url":"${selectedContent.data.url}"']`);
             el?.classList.add('selected');
         }
     }
@@ -339,9 +368,14 @@ export function addSlideToPlaylistEditor(mediaData, duration = 10) {
     slideEl.className = 'playlist-slide';
     slideEl.dataset.media = JSON.stringify(mediaData);
     slideEl.dataset.duration = duration;
+    const isVideo = mediaData.mimeType && mediaData.mimeType.startsWith('video/');
+
+    const mediaMarkup = isVideo
+        ? `<video src="${mediaData.url}" muted autoplay loop draggable="false" class="lazy-media"></video>`
+        : `<img src="${mediaData.url}" alt="${mediaData.name}" draggable="false" class="lazy-media">`;
 
     slideEl.innerHTML = `
-        <img src="${mediaData.url}" alt="${mediaData.name}" draggable="false">
+        ${mediaMarkup}
         <div class="remove-slide-btn" title="Remove from playlist"><i class="fas fa-times"></i></div>
         <div class="duration-editor">
             <i class="fas fa-clock"></i>
@@ -374,16 +408,18 @@ export function addSlideToPlaylistEditor(mediaData, duration = 10) {
     slidesContainer.insertBefore(slideEl, addSlideButton);
 }
 
-export function populateImageSelector(allMedia) {
-    const grid = document.getElementById('playlist-image-selector-grid');
+export function populateMediaSelector(allMedia) {
+    const grid = document.getElementById('playlist-media-selector-grid');
     grid.innerHTML = '';
     allMedia.forEach(item => {
-        const imgItem = document.createElement('div');
-        imgItem.className = 'image-picker-item';
-        imgItem.dataset.media = JSON.stringify({ name: item.name, url: item.url, storagePath: item.storagePath });
-        imgItem.innerHTML = `<img src="${item.url}" title="${item.name}"><div class="selection-indicator"><i class="fas fa-check"></i></div>`;
-        imgItem.addEventListener('click', () => { imgItem.classList.toggle('selected'); });
-        grid.appendChild(imgItem);
+        const mediaItem = document.createElement('div');
+        mediaItem.className = 'image-picker-item';
+        mediaItem.dataset.media = JSON.stringify({ name: item.name, url: item.url, storagePath: item.storagePath, mimeType: item.mimeType });
+        const isVideo = item.mimeType && item.mimeType.startsWith('video/');
+        const inner = isVideo ? `<video src="${item.url}" muted autoplay loop></video>` : `<img src="${item.url}" title="${item.name}">`;
+        mediaItem.innerHTML = `${inner}<div class="selection-indicator"><i class="fas fa-check"></i></div>`;
+        mediaItem.addEventListener('click', () => { mediaItem.classList.toggle('selected'); });
+        grid.appendChild(mediaItem);
     });
 }
 
@@ -393,7 +429,7 @@ export function updateGlobalDefaultIndicator(globalDefaultContent) {
     if (!globalDefaultContent) return;
 
     let contentContainer;
-    if (globalDefaultContent.type === 'image') {
+    if (globalDefaultContent.type === 'image' || globalDefaultContent.type === 'video') {
         contentContainer = document.querySelector(`.media-item[data-content*='"url":"${globalDefaultContent.data.url}"']`);
     } else if (globalDefaultContent.type === 'playlist') {
         contentContainer = document.querySelector(`.playlist-card[data-content*='"id":"${globalDefaultContent.data.id}"']`);
