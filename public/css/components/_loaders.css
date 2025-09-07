@@ -19,8 +19,8 @@
   position: relative; /* Needed for the image to overlay correctly */
 }
 
-/* The image starts invisible and centered */
-.skeleton-container .lazy-image {
+/* The media starts invisible and centered */
+.skeleton-container .lazy-media {
   opacity: 0;
   transition: opacity 0.4s ease-in-out;
   position: absolute;
@@ -31,7 +31,7 @@
   object-fit: cover;
 }
 
-/* When loaded, the image becomes visible */
-.skeleton-container .lazy-image.is-loaded {
+/* When loaded, the media becomes visible */
+.skeleton-container .lazy-media.is-loaded {
   opacity: 1;
 }

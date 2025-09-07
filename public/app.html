@@ -69,7 +69,7 @@
             <section id="page-media" class="page"></section>
             <section id="page-scheduler" class="page"></section>
 
-            <input type="file" id="file-upload-input" multiple hidden accept="image/png, image/jpeg, image/gif, image/svg+xml">
+            <input type="file" id="file-upload-input" multiple hidden accept="image/png, image/jpeg, image/gif, image/svg+xml, video/mp4">
         </main>
     </div>
 
@@ -198,8 +198,8 @@
                     <input type="text" id="playlist-name-input" placeholder="e.g., Lobby Welcome Loop">
                 </div>
                 <div class="form-group">
-                    <label>Images in Playlist</label>
-                    <p class="form-hint">Click an image's duration to edit. Drag and drop to reorder.</p>
+                    <label>Media in Playlist</label>
+                    <p class="form-hint">Click an item's duration to edit. Drag and drop to reorder.</p>
                     <div class="playlist-slides-container" id="playlist-slides-container">
                         <div class="playlist-slide add-slide-card" id="add-slide-btn">
                             <i class="fas fa-plus"></i>
@@ -216,19 +216,19 @@
         </div>
     </div>
 
-    <div id="modal-select-image" class="modal-overlay">
+    <div id="modal-select-media" class="modal-overlay">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
-                <h3>Select Image(s)</h3>
+                <h3>Select Media</h3>
                 <i class="fas fa-times close-modal"></i>
             </div>
             <div class="modal-body">
-                <p class="form-hint">Click one or more images to add to your playlist.</p>
-                <div class="image-picker-grid" id="playlist-image-selector-grid"></div>
+                <p class="form-hint">Click one or more items to add to your playlist.</p>
+                <div class="image-picker-grid" id="playlist-media-selector-grid"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary close-modal">Cancel</button>
-                <button id="add-selected-images-btn" class="btn btn-primary">Add Selected Images</button>
+                <button id="add-selected-media-btn" class="btn btn-primary">Add Selected Media</button>
             </div>
         </div>
     </div>

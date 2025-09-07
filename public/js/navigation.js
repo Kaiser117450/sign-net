@@ -44,13 +44,13 @@ const pageTemplates = {
         <div class="media-upload-area">
             <i class="fas fa-cloud-upload-alt"></i>
             <h3>Drag & Drop or Click to Upload</h3>
-            <p>PNG, JPG, GIF, SVG supported</p>
+            <p>PNG, JPG, GIF, SVG, MP4 supported</p>
             <div class="progress-bar-container">
                 <div class="progress-bar"></div>
             </div>
         </div>
         <div class="media-section">
-            <h3 class="media-section-header">Image Library</h3>
+            <h3 class="media-section-header">Media Library</h3>
             <div class="media-grid" id="media-grid-container"></div>
         </div>
 
@@ -143,8 +143,8 @@ export function navigateTo(pageId, appState) {
         headerActions.appendChild(button);
     }
 
-    // 5. Ensure all images (especially lazy-loaded ones) are handled
-    appState.handleImageLoading();
+    // 5. Ensure all media (especially lazy-loaded ones) are handled
+    appState.handleMediaLoading();
     
     // 6. Close the sidebar if it's open on mobile
     const sidebar = document.getElementById('sidebar');

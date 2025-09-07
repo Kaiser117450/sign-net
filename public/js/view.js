@@ -23,7 +23,7 @@ const DOMElements = {
     confirmLogoutBtn: document.getElementById('confirm-logout-btn'),
     cancelLogoutBtn: document.getElementById('cancel-logout-btn'),
     generateNewCodeBtn: document.getElementById('generate-new-code-btn'),
-    imageSlots: [document.getElementById('image-slot-a'), document.getElementById('image-slot-b')]
+    mediaSlots: [document.getElementById('media-slot-a'), document.getElementById('media-slot-b')]
 };
 
 let state = {
@@ -41,7 +41,7 @@ let state = {
     playlistTimer: null,
     currentPlaylist: null,
     currentPlaylistIndex: 0,
-    visibleImageSlot: 0,
+    visibleMediaSlot: 0,
     connectionRef: null, // Stores the unique reference for this specific connection
     contentSessionId: 0
 };
@@ -70,15 +70,17 @@ function cleanupListeners() {
 
 function displayContent(content) {
     const url = content?.data?.url || null;
-    const visibleSlot = DOMElements.imageSlots[state.visibleImageSlot];
-    const hiddenSlot = DOMElements.imageSlots[1 - state.visibleImageSlot];
+    const type = content?.type || null;
+    const visibleSlot = DOMElements.mediaSlots[state.visibleMediaSlot];
+    const hiddenSlot = DOMElements.mediaSlots[1 - state.visibleMediaSlot];
 
-    for (let i = 0; i < DOMElements.imageSlots.length; i++) {
-        if (DOMElements.imageSlots[i].src === url && url !== null) {
-            if (i !== state.visibleImageSlot) {
-                DOMElements.imageSlots[state.visibleImageSlot].classList.remove('visible');
-                DOMElements.imageSlots[i].classList.add('visible');
-                state.visibleImageSlot = i;
+    for (let i = 0; i < DOMElements.mediaSlots.length; i++) {
+        const slot = DOMElements.mediaSlots[i];
+        if (slot.dataset.url === url && slot.dataset.type === type && url !== null) {
+            if (i !== state.visibleMediaSlot) {
+                DOMElements.mediaSlots[state.visibleMediaSlot].classList.remove('visible');
+                slot.classList.add('visible');
+                state.visibleMediaSlot = i;
             }
             return;
         }
@@ -89,18 +91,45 @@ function displayContent(content) {
         return;
     }
 
-    hiddenSlot.src = url;
-    hiddenSlot.onload = () => {
-        visibleSlot.classList.remove('visible');
-        hiddenSlot.classList.add('visible');
-        state.visibleImageSlot = 1 - state.visibleImageSlot;
-        hiddenSlot.onload = null;
-    };
-    hiddenSlot.onerror = () => {
-        console.error(`[Display] Failed to load image: ${url}`);
-        hiddenSlot.onload = null;
-        hiddenSlot.onerror = null;
-    };
+    hiddenSlot.innerHTML = '';
+    let mediaEl;
+    if (type === 'video') {
+        mediaEl = document.createElement('video');
+        mediaEl.src = url;
+        mediaEl.autoplay = true;
+        mediaEl.loop = true;
+        mediaEl.muted = true;
+        mediaEl.playsInline = true;
+        mediaEl.onloadeddata = () => {
+            visibleSlot.classList.remove('visible');
+            hiddenSlot.classList.add('visible');
+            state.visibleMediaSlot = 1 - state.visibleMediaSlot;
+            mediaEl.onloadeddata = null;
+        };
+        mediaEl.onerror = () => {
+            console.error(`[Display] Failed to load video: ${url}`);
+            mediaEl.onloadeddata = null;
+            mediaEl.onerror = null;
+        };
+    } else {
+        mediaEl = document.createElement('img');
+        mediaEl.src = url;
+        mediaEl.onload = () => {
+            visibleSlot.classList.remove('visible');
+            hiddenSlot.classList.add('visible');
+            state.visibleMediaSlot = 1 - state.visibleMediaSlot;
+            mediaEl.onload = null;
+        };
+        mediaEl.onerror = () => {
+            console.error(`[Display] Failed to load image: ${url}`);
+            mediaEl.onload = null;
+            mediaEl.onerror = null;
+        };
+    }
+
+    hiddenSlot.dataset.url = url;
+    hiddenSlot.dataset.type = type;
+    hiddenSlot.appendChild(mediaEl);
 }
 
 function stopPlaylist() {
@@ -127,8 +156,9 @@ function playNextInPlaylist(sessionId) {
 
     const currentItem = state.currentPlaylist.items[state.currentPlaylistIndex];
     const duration = (currentItem.duration || 10) * 1000;
+    const mediaType = currentItem.media.mimeType && currentItem.media.mimeType.startsWith('video/') ? 'video' : 'image';
 
-    displayContent({ type: 'image', data: currentItem.media });
+    displayContent({ type: mediaType, data: currentItem.media });
 
     state.currentPlaylistIndex++;
     state.playlistTimer = setTimeout(() => playNextInPlaylist(sessionId), duration);
